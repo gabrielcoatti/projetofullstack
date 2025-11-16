@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistema de Gestão de Projetos</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js para dashboard integrado -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Aplicar tema escuro imediatamente se salvo -->
+  <script>
+    // Filtrar erros de extensões do navegador no console
+    const originalError = console.error;
+    console.error = function(...args) {
+      const message = args.join(' ');
+      // Ignorar erros de content scripts de extensões
+      if (message.includes('content_script') || 
+          message.includes('chrome-extension') || 
+          message.includes('moz-extension')) {
+        return;
+      }
+      originalError.apply(console, args);
+    };
+    
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+        
+        // Aplicar quando body estiver disponível
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('dark-theme');
+        });
+      }
+    })();
+  </script>
+  <style>
+    /* Estilos do Login */
+    .login-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .login-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .login-header svg {
+      margin-bottom: 1rem;
+    }
+
+    .login-header h2 {
+      margin: 0 0 0.5rem 0;
+      color: #333;
+      font-size: 1.5rem;
+    }
+
+    .login-header p {
+      margin: 0 0 2rem 0;
+      color: #666;
+    }
+
+    .login-form .form-group {
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+
+    .login-form label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .login-form input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+
+    .login-form input:focus {
+      outline: none;
+      border-color: #6a11cb;
+    }
+
+    .login-form button {
+      width: 100%;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .login-form button:hover {
+      transform: translateY(-2px);
+    }
+
+    .login-form button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .login-status {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+    }
+
+    .login-status.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+
+    .login-status.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+
+    /* Modo escuro para login */
+    body.dark-theme .login-screen {
+      background: linear-gradient(135deg, #041027 0%, #082036 100%);
+    }
+
+    body.dark-theme .login-container {
+      background: #1a202c;
+      color: #ffffff;
+      border: 1px solid #2d3748;
+    }
+
+    body.dark-theme .login-header h2 {
+      color: #ffffff;
+    }
+    
+    body.dark-theme .login-container label {
+      color: #ffffff;
+      font-weight: 500;
+    }
+    
+    body.dark-theme .login-container input {
+      background: #2d3748;
+      color: #ffffff;
+      border: 1px solid #4a5568;
+    }
+    
+    body.dark-theme .login-container input::placeholder {
+      color: #cbd5e0;
+    }
+    
+    body.dark-theme .login-container .btn {
+      color: #ffffff;
+    }
+
+    body.dark-theme .login-header p {
+      color: #9aa7bf;
+    }
+
+    body.dark-theme .login-form label {
+      color: #e6eef8;
+    }
+
+    body.dark-theme .login-form input {
+      background: #0f172a;
+      border-color: #334155;
+      color: #e6eef8;
+    }
+
+    body.dark-theme .login-form input:focus {
+      border-color: #6a11cb;
+    }
+
+    body.dark-theme .login-status.success {
+      background: #064e3b;
+      color: #6ee7b7;
+    }
+
+    body.dark-theme .login-status.error {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    /* Estilos para modal de funcionalidades */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+    }
+    
+    body.dark-theme .modal-content {
+      background: #2d3748;
+      color: #e2e8f0;
+    }
+    
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+    }
+    
+    body.dark-theme .modal-close {
+      color: #e2e8f0;
+    }
+
+    /* Estilos dashboard integrado */
+    .dashboard {
+      animation: fadeIn 0.3s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .stat-card {
+      background: white !important;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+    
+    body.dark-theme .stat-card {
+      background: #2d3748 !important;
+      border-color: #4a5568;
+      color: #e2e8f0;
+    }
+    
+    body.dark-theme .stat-card h6 {
+      color: #a0aec0;
+    }
+    
+    body.dark-theme .stat-card .fs-4 {
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Tela de Login -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-container">
+      <div class="login-header">
+        <svg viewBox="0 0 24 24" width="48" height="48">
+          <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#6a11cb"/><stop offset="1" stop-color="#2575fc"/></linearGradient></defs>
+          <rect width="24" height="24" rx="6" fill="url(#g)"/>
+          <path d="M7 12l3 3 7-9" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h2>Sistema de Gerenciamento</h2>
+        <p>Faça login para acessar o sistema</p>
+      </div>
+      
+      <form id="loginForm" class="login-form">
+        <div class="form-group">
+          <label for="loginEmail">Email:</label>
+          <input type="email" id="loginEmail" placeholder="exemplo@email.com" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="loginPassword">Senha:</label>
+          <input type="password" id="loginPassword" placeholder="Sua senha" required>
+        </div>
+        
+        <button type="submit" id="loginBtn">Entrar</button>
+        
+        <button type="button" id="loginDemoBtn" class="btn btn-success" style="margin-top: 10px; width: 100%; font-weight: 600;">🚀 Login Demo (Rápido)</button>
+        
+        <button type="button" id="registerBtn" class="btn btn-secondary" style="margin-top: 5px; width: 100%; font-weight: 600;">👤 Criar Nova Conta</button>
+        
+        <div id="loginStatus" class="login-status"></div>
+      </form>
+    </div>
+  </div>
+
+  <main class="container" id="mainApp" style="display: none;">
+    <header class="topo">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
+          <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#6a11cb"/><stop offset="1" stop-color="#2575fc"/></linearGradient></defs>
+          <rect width="24" height="24" rx="6" fill="url(#g)"/>
+          <path d="M7 12l3 3 7-9" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <h1>Sistema de Gestão de Projetos</h1>
+          <p class="sub">Gerencie suas tarefas e projetos — mínimo 5 caracteres</p>
+        </div>
+      </div>
+
+      <div class="topo-acoes">
+        <div class="stats">
+          <span id="contador">0 itens</span>
+        </div>
+        <button id="dashboardBtn" class="btn secondary" title="Ver Dashboard">📊 Dashboard</button>
+        <button id="limparBtn" class="btn secondary" title="Limpar tudo">Limpar tudo</button>
+        <button id="themeBtn" class="btn secondary" title="Alternar tema">🌓</button>
+        <button id="logoutBtn" class="btn secondary" title="Sair do sistema">🚪 Sair</button>
+      </div>
+    </header>
+
+    <section class="card formulario">
+      <div class="input-grupo">
+        <input id="itemInput" type="text" placeholder="Digite uma tarefa/projeto (mínimo 5 caracteres)" autocomplete="off" class="form-control" />
+        <input id="imgInput" type="file" accept="image/png" title="PNG opcional" />
+        <button id="addBtn" class="btn principal btn-primary">Adicionar Projeto</button>
+      </div>
+      <p class="obs">PNG opcional — a imagem aparece ao lado do texto.</p>
+    </section>
+
+    <!-- Dashboard Integrado -->
+    <section id="statsSection" class="dashboard" style="display:none; margin-top:24px;">
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="stat-card p-3 rounded shadow-sm bg-light">
+            <h6 class="mb-1">Total Projetos</h6>
+            <div id="totalProjetos" class="fs-4 fw-bold">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card p-3 rounded shadow-sm bg-light">
+            <h6 class="mb-1">Projetos Mês</h6>
+            <div id="projetosMes" class="fs-4 fw-bold">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card p-3 rounded shadow-sm bg-light">
+            <h6 class="mb-1">Média Caracteres</h6>
+            <div id="mediaCaracteres" class="fs-4 fw-bold">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card p-3 rounded shadow-sm bg-light">
+            <h6 class="mb-1">Com Imagem</h6>
+            <div id="produtividade" class="fs-4 fw-bold">0%</div>
+          </div>
+        </div>
+      </div>
+      <div class="card mt-4 p-3">
+        <h6 class="mb-3" style="color: #e6eef8 !important;">Distribuição por Mês</h6>
+        <canvas id="projectsPerMonthChart" height="140"></canvas>
+      </div>
+    </section>
+
+    <section class="card lista-wrapper">
+      <ul id="lista" class="lista" aria-live="polite"></ul>
+      <p id="vazio" class="vazio alert alert-info">Nenhum projeto ainda — adicione seu primeiro projeto para começar.</p>
+    </section>
+
+  </main>
+
+  <div id="toast-root" class="toast-root" aria-hidden="true"></div>
+
+  <!-- Modal de mídia - FIXO -->
+  <div id="media-modal" class="media-modal" role="dialog" aria-modal="true" aria-hidden="true" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; align-items:center; justify-content:center;">
+    <div class="media-backdrop" data-close="true" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
+    <div class="media-box" role="document" style="background:white; padding:2rem; border-radius:10px; max-width:90%; max-height:90%; overflow-y:auto; position:relative; z-index:10001;">
+      <button class="media-close" id="mediaClose" aria-label="Fechar" style="position:absolute; top:10px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; z-index:10002;">✕</button>
+      <img id="mediaImg" alt="" style="max-width:100%; height:auto;" />
+      <div id="mediaCaption" class="media-caption" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <!-- Scripts carregados -->
+  <!-- Bootstrap JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Script de autenticação -->
+  <script src="js/auth.js?v=2.0"></script>
+  
+  <!-- Script simplificado para funcionar sem problemas -->
+  <script>
+    // Lista de itens
+    let items = [];
+
+    // Elementos DOM (serão inicializados quando o DOM carregar)
+    let itemInput, imgInput, addBtn, lista, vazio, contador, limparBtn, themeBtn;
+
+    // Função para adicionar item
+    // Função para adicionar novo item
+    let adicionandoItem = false;
+    async function adicionarItem() {
+      if (adicionandoItem) {
+        return;
+      }
+      
+      if (!itemInput) {
+        return;
+      }
+      
+      adicionandoItem = true;
+      
+      try {
+        const textoRaw = itemInput.value.trim();
+        const texto = sanitizeInput(textoRaw);
+        
+        if (!texto) {
+          showToast('Digite um texto válido para o item!', 'error');
+          return;
+        }
+        
+        if (texto.length < 5) {
+          showToast('Item deve ter pelo menos 5 caracteres!', 'error');
+          return;
+        }
+        
+        if (texto.length > 500) {
+          showToast('Item não pode ter mais de 500 caracteres!', 'error');
+          return;
+        }
+
+        // Processar imagem se houver
+        let imagemBase64 = null;
+        if (imgInput && imgInput.files && imgInput.files[0]) {
+          const file = imgInput.files[0];
+          
+          // Validar tipo de arquivo
+          const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+          if (!allowedTypes.includes(file.type)) {
+            showToast('Apenas PNG, JPG, GIF ou WebP são permitidos!', 'error');
+            return;
+          }
+          
+          // Validar tamanho (máximo 2MB para melhor performance)
+          if (file.size > 2 * 1024 * 1024) {
+            showToast('Imagem deve ter no máximo 2MB!', 'error');
+            return;
+          }
+          
+          // Ler imagem como base64
+          imagemBase64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+          });
+        }
+
+        // Salvar direto no backend
+        try {
+          const token = localStorage.getItem('authToken');
+          if (!token) {
+            showToast('Você precisa estar logado!', 'error');
+            return;
+          }
+          
+          // Timeout de 10 segundos
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          
+          const response = await fetch('/api/lists', {
+            signal: controller.signal,
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              texto: texto,
+              description: '',
+              priority: 'medium',
+              image_path: imagemBase64,
+              pinned: false
+            })
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Adicionar ao array local com ID do backend
+            const item = {
+              id: data.id,
+              texto: texto,
+              imagem: imagemBase64,
+              pinned: false,
+              timestamp: Date.now()
+            };
+            
+            items.push(item);
+            renderizarLista();
+            atualizarEstatisticas();
+            
+            // Limpar form
+            itemInput.value = '';
+            if (imgInput) imgInput.value = '';
+            showToast('Item adicionado com sucesso!', 'success');
+          } else {
+            const error = await response.json();
+            showToast('Erro ao salvar: ' + (error.error || 'Falha no servidor'), 'error');
+          }
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            showToast('Tempo esgotado! Verifique sua conexão.', 'error');
+          } else {
+            showToast('Erro ao salvar item!', 'error');
+          }
+        }
+      } catch (error) {
+        showToast('Erro ao processar item!', 'error');
+      } finally {
+        adicionandoItem = false;
+      }
+    }
+
+    // Renderizar lista com TODAS as funcionalidades
+    function renderizarLista() {
+      if (items.length === 0) {
+        lista.innerHTML = '';
+        vazio.style.display = 'block';
+        contador.textContent = '0 itens';
+        return;
+      }
+
+      vazio.style.display = 'none';
+      contador.textContent = `${items.length} item${items.length > 1 ? 's' : ''}`;
+
+      // Limpar lista
+      lista.innerHTML = '';
+
+      // Separar fixados e não fixados
+      const fixados = items.filter(item => item.pinned);
+      const naoFixados = items.filter(item => !item.pinned);
+      const todosItems = [...fixados, ...naoFixados];
+
+      // Criar elementos para cada item
+      todosItems.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'lista-item' + (item.pinned ? ' pinned' : '');
+        li.setAttribute('data-id', item.id);
+        li.setAttribute('draggable', item.pinned ? 'false' : 'true');
+        
+        // Imagem (se houver)
+        if (item.imagem || item.image_path) {
+          const img = document.createElement('img');
+          img.src = item.imagem || item.image_path;
+          img.alt = 'Imagem';
+          img.className = 'miniatura';
+          img.onclick = () => abrirModal(img.src, item.texto);
+          li.appendChild(img);
+        }
+
+        // Texto
+        const span = document.createElement('span');
+        span.className = 'texto-item';
+        span.textContent = item.texto;
+        li.appendChild(span);
+
+        // Controles
+        const controles = document.createElement('div');
+        controles.className = 'controles';
+
+        // Botão Fixar/Desfixar
+        const pinBtn = document.createElement('button');
+        pinBtn.className = 'btn pin' + (item.pinned ? ' active' : '');
+        pinBtn.textContent = '📌';
+        pinBtn.title = item.pinned ? 'Desfixar' : 'Fixar';
+        pinBtn.onclick = () => togglePin(item.id);
+        controles.appendChild(pinBtn);
+
+        // Botão Editar
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn editar';
+        editBtn.textContent = '✏️';
+        editBtn.title = 'Editar';
+        editBtn.onclick = () => editarItemInline(li, item);
+        controles.appendChild(editBtn);
+
+        // Botão Mover para Cima
+        const upBtn = document.createElement('button');
+        upBtn.className = 'btn mover';
+        upBtn.textContent = '↑';
+        upBtn.title = 'Mover para cima';
+        upBtn.onclick = () => moverItem(item.id, 'cima');
+        controles.appendChild(upBtn);
+
+        // Botão Mover para Baixo
+        const downBtn = document.createElement('button');
+        downBtn.className = 'btn mover';
+        downBtn.textContent = '↓';
+        downBtn.title = 'Mover para baixo';
+        downBtn.onclick = () => moverItem(item.id, 'baixo');
+        controles.appendChild(downBtn);
+
+        // Botão Excluir
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn excluir';
+        delBtn.textContent = '🗑️';
+        delBtn.title = 'Remover';
+        delBtn.onclick = () => removerItem(item.id);
+        controles.appendChild(delBtn);
+
+        li.appendChild(controles);
+
+        // Drag and Drop
+        li.addEventListener('dragstart', (e) => {
+          li.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+
+        li.addEventListener('dragend', () => {
+          li.classList.remove('dragging');
+        });
+
+        lista.appendChild(li);
+      });
+
+      // Configurar drop zone
+      lista.addEventListener('dragover', handleDragOver);
+      lista.addEventListener('drop', handleDrop);
+    }
+
+    // Drag and Drop handlers
+    function handleDragOver(e) {
+      e.preventDefault();
+      const dragging = document.querySelector('.dragging');
+      if (!dragging) return;
+
+      const isDraggingPinned = dragging.classList.contains('pinned');
+      const afterElement = getDragAfterElement(lista, e.clientY, isDraggingPinned);
+      
+      if (afterElement == null) {
+        lista.appendChild(dragging);
+      } else {
+        lista.insertBefore(dragging, afterElement);
+      }
+    }
+
+    function getDragAfterElement(container, y, isPinned) {
+      const draggableElements = [...container.querySelectorAll('.lista-item:not(.dragging)')];
+
+      return draggableElements.reduce((closest, child) => {
+        const childIsPinned = child.classList.contains('pinned');
+        
+        // Não pode cruzar a barreira pinned/unpinned
+        if (isPinned !== childIsPinned) {
+          return closest;
+        }
+        
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    async function handleDrop(e) {
+      e.preventDefault();
+      await salvarOrdem();
+      showToast('Ordem atualizada!', 'success');
+    }
+
+    async function salvarOrdem() {
+      const elementos = [...lista.querySelectorAll('.lista-item')];
+      const novosItems = elementos.map(el => {
+        const id = parseInt(el.getAttribute('data-id'));
+        return items.find(item => item.id === id);
+      }).filter(item => item);
+
+      items = novosItems;
+      
+      // Salvar ordem no backend - fazer em PARALELO para melhor performance
+      try {
+        const token = localStorage.getItem('authToken');
+        const promises = items.map((item, index) => 
+          fetch(`/api/lists/${item.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              texto: item.texto,
+              description: item.description || '',
+              priority: item.priority || 'medium',
+              image_path: item.imagem || item.image_path || '',
+              pinned: item.pinned || false,
+              order_index: index
+            })
+          })
+        );
+        
+        await Promise.all(promises);
+      } catch (error) {
+        showToast('Erro ao salvar ordem!', 'error');
+      }
+    }
+
+    // Toggle Pin (Fixar/Desfixar)
+    async function togglePin(id) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      const novoEstado = !item.pinned;
+
+      try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`/api/lists/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            texto: item.texto,
+            description: item.description || '',
+            priority: item.priority || 'medium',
+            image_path: item.imagem || item.image_path,
+            pinned: novoEstado
+          })
+        });
+
+        if (response.ok) {
+          item.pinned = novoEstado;
+          renderizarLista();
+          showToast(novoEstado ? 'Item fixado!' : 'Item desfixado!', 'success');
+        } else {
+          showToast('Erro ao alterar fixação', 'error');
+        }
+      } catch (error) {
+        showToast('Erro ao alterar fixação', 'error');
+      }
+    }
+
+    // Editar item inline (no próprio site)
+    function editarItemInline(li, item) {
+      const textoSpan = li.querySelector('.texto-item');
+      const controles = li.querySelector('.controles');
+      const textoOriginal = textoSpan.textContent;
+
+      // Criar input
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'edit-input';
+      input.value = textoOriginal;
+      input.style.cssText = 'flex: 1; padding: 8px; border: 2px solid #2575fc; border-radius: 6px; font-size: 14px;';
+
+      // Substituir span por input
+      textoSpan.replaceWith(input);
+      input.focus();
+      input.select();
+
+      // Criar botões salvar/cancelar
+      const salvarBtn = document.createElement('button');
+      salvarBtn.className = 'btn';
+      salvarBtn.textContent = '✅';
+      salvarBtn.title = 'Salvar';
+      salvarBtn.style.background = '#10b981';
+      salvarBtn.style.color = 'white';
+
+      const cancelarBtn = document.createElement('button');
+      cancelarBtn.className = 'btn';
+      cancelarBtn.textContent = '❌';
+      cancelarBtn.title = 'Cancelar';
+      cancelarBtn.style.background = '#ef4444';
+      cancelarBtn.style.color = 'white';
+
+      // Esconder botões normais
+      controles.style.display = 'none';
+
+      // Adicionar botões temporários
+      li.appendChild(salvarBtn);
+      li.appendChild(cancelarBtn);
+
+      // Função salvar
+      const salvar = async () => {
+        const novoTexto = input.value.trim();
+        if (novoTexto.length < 5) {
+          showToast('Texto deve ter pelo menos 5 caracteres', 'error');
+          return;
+        }
+
+        try {
+          const token = localStorage.getItem('authToken');
+          const response = await fetch(`/api/lists/${item.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              texto: novoTexto,
+              description: item.description || '',
+              priority: item.priority || 'medium',
+              image_path: item.imagem || item.image_path,
+              pinned: item.pinned || false
+            })
+          });
+
+          if (response.ok) {
+            item.texto = novoTexto;
+            const itemIndex = items.findIndex(i => i.id === item.id);
+            if (itemIndex !== -1) items[itemIndex] = item;
+            renderizarLista();
+            showToast('Item editado!', 'success');
+          } else {
+            showToast('Erro ao editar item!', 'error');
+            restaurar();
+          }
+        } catch (error) {
+          showToast('Erro ao editar item!', 'error');
+          restaurar();
+        }
+      };
+
+      // Função cancelar
+      const restaurar = () => {
+        const novoSpan = document.createElement('span');
+        novoSpan.className = 'texto-item';
+        novoSpan.textContent = textoOriginal;
+        input.replaceWith(novoSpan);
+        controles.style.display = '';
+        salvarBtn.remove();
+        cancelarBtn.remove();
+      };
+
+      salvarBtn.onclick = salvar;
+      cancelarBtn.onclick = restaurar;
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') salvar();
+        if (e.key === 'Escape') restaurar();
+      };
+    }
+
+    // Mover item
+    async function moverItem(id, direcao) {
+      const index = items.findIndex(i => i.id === id);
+      if (index === -1) return;
+
+      let newIndex;
+      if (direcao === 'cima') {
+        if (index === 0) return; // Já está no topo
+        newIndex = index - 1;
+        // Não pode pular a barreira de pinned/unpinned
+        if (!!items[index].pinned !== !!items[newIndex].pinned) return;
+      } else if (direcao === 'baixo') {
+        if (index === items.length - 1) return; // Já está no final
+        newIndex = index + 1;
+        // Não pode pular a barreira de pinned/unpinned
+        if (!!items[index].pinned !== !!items[newIndex].pinned) return;
+      } else {
+        return;
+      }
+
+      // Trocar posições
+      const temp = items[newIndex];
+      items[newIndex] = items[index];
+      items[index] = temp;
+
+      renderizarLista();
+      await salvarOrdem();
+      showToast('Ordem atualizada!', 'success');
+    }
+
+    // Remover item
+    let removendoItem = false;
+    async function removerItem(id) {
+      if (removendoItem) return;
+      
+      try {
+        removendoItem = true;
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`/api/lists/${id}`, { 
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          items = items.filter(item => item.id !== id);
+          renderizarLista();
+          atualizarEstatisticas();
+          showToast('Item removido!', 'info');
+        } else {
+          const error = await response.json();
+          showToast('Erro: ' + (error.error || 'Não foi possível remover'), 'error');
+        }
+      } catch (error) {
+        showToast('Erro ao remover item!', 'error');
+      } finally {
+        removendoItem = false;
+      }
+    }
+
+    // Editar item
+    async function editarItem(id) {
+      const item = items.find(i => i.id === id);
+      if (item) {
+        const novoTexto = prompt('Editar item:', item.texto);
+        if (novoTexto && novoTexto.trim().length >= 5) {
+          try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`/api/lists/${id}`, {
+              method: 'PUT',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                texto: novoTexto.trim(),
+                description: item.description || '',
+                priority: item.priority || 'medium',
+                image_path: item.imagem
+              })
+            });
+            
+            if (response.ok) {
+              item.texto = novoTexto.trim();
+              renderizarLista();
+              atualizarEstatisticas();
+              showToast('Item editado!', 'success');
+            } else {
+              showToast('Erro ao editar item!', 'error');
+            }
+          } catch (error) {
+            showToast('Erro ao editar item!', 'error');
+          }
+        }
+      }
+    }
+
+    // Limpar todos
+    async function limparTudo() {
+      if (items.length > 0 && confirm('Deseja limpar todos os itens?')) {
+        try {
+          const token = localStorage.getItem('authToken');
+          const response = await fetch('/api/lists', {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            items = [];
+            renderizarLista();
+            atualizarEstatisticas();
+            showToast('Lista limpa!', 'info');
+          } else {
+            showToast('Erro ao limpar lista!', 'error');
+          }
+        } catch (error) {
+          showToast('Erro ao limpar lista!', 'error');
+        }
+      }
+    }
+
+    // Escape HTML - Prevenir XSS
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Sanitizar input do usuário
+    function sanitizeInput(input) {
+      if (!input) return '';
+      return input
+        .replace(/[<>"']/g, '')  // Remove caracteres perigosos
+        .trim()
+        .substring(0, 500);  // Limite de 500 caracteres
+    }
+
+    // Modal de imagem
+    function abrirModal(src, caption) {
+      const modal = document.getElementById('media-modal');
+      const img = document.getElementById('mediaImg');
+      const captionEl = document.getElementById('mediaCaption');
+      
+      img.src = src;
+      captionEl.textContent = caption;
+      modal.style.display = 'flex';
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    // Fechar modal
+    function fecharModal() {
+      const modal = document.getElementById('media-modal');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+      }
+    }
+    // Função para atualizar botão e fundo do tema
+    function atualizarTema() {
+      const btn = document.getElementById('themeBtn');
+      const isDark = document.body.classList.contains('dark-theme');
+      
+      if (btn) {
+        btn.textContent = isDark ? '☀️' : '🌓';
+      }
+      
+      // Forçar aplicação do fundo
+      if (isDark) {
+        document.body.style.background = 'linear-gradient(180deg, #041027 0%, #082036 100%)';
+      } else {
+        document.body.style.background = 'linear-gradient(180deg, #eef3ff 0%, #f4f7fb 100%)';
+      }
+    }
+
+    // Toggle do tema
+    function toggleTheme() {
+      const isDark = document.body.classList.contains('dark-theme');
+      const btn = document.getElementById('themeBtn');
+      
+      if (isDark) {
+        document.documentElement.classList.remove('dark-theme');
+        document.body.classList.remove('dark-theme');
+        localStorage.setItem('theme', 'light');
+        document.body.style.background = 'linear-gradient(180deg, #eef3ff 0%, #f4f7fb 100%)';
+        if (btn) btn.textContent = '🌓';
+      } else {
+        document.documentElement.classList.add('dark-theme');
+        document.body.classList.add('dark-theme');
+        localStorage.setItem('theme', 'dark');
+        document.body.style.background = 'linear-gradient(180deg, #041027 0%, #082036 100%)';
+        if (btn) btn.textContent = '☀️';
+      }
+    }
+    function showLoginStatus(message, type) {
+      const loginStatus = document.getElementById('loginStatus');
+      if (loginStatus) {
+        loginStatus.textContent = message;
+        loginStatus.style.display = 'block';
+        loginStatus.className = `login-status ${type}`;
+        setTimeout(() => {
+          loginStatus.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    async function fazerLogin(email, senha) {
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: senha })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok && data.token) {
+          // Login bem-sucedido
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userData', JSON.stringify(data.user));
+          authState = { checking: false, authenticated: true, token: data.token };
+          sistemaInicializado = true;
+          
+          showLoginStatus('Login realizado com sucesso!', 'success');
+          
+          setTimeout(() => {
+            mostrarTelaApp();
+            carregarItensDoBackend();
+            // Atualizar estatísticas se estiver visível
+            const statsSection = document.getElementById('statsSection');
+            if (statsSection && statsSection.style.display !== 'none') {
+              atualizarEstatisticas();
+            }
+          }, 1000);
+          
+          return true;
+        } else {
+          showLoginStatus(data.error || 'Erro no login', 'error');
+          return false;
+        }
+      } catch (error) {
+        showLoginStatus('Erro de conexão', 'error');
+        return false;
+      }
+    }
+
+    // Logout correto: limpar estado e mostrar tela de login
+    function logout() {
+      
+      // Limpar autenticação
+      try {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+      } catch (e) {
+        // Erro ao limpar storage
+      }
+      
+      // Resetar estado
+      authState = { checking: false, authenticated: false, token: null };
+      sistemaInicializado = false;
+      
+      // Limpar a lista de items
+      items = [];
+      
+      // Ocultar app e mostrar tela de login
+      const loginScreenEl = document.getElementById('loginScreen');
+      const mainAppEl = document.getElementById('mainApp');
+      if (loginScreenEl) {
+        loginScreenEl.style.display = 'flex';
+      }
+      if (mainAppEl) {
+        mainAppEl.style.display = 'none';
+      }
+      
+      // Limpar campos de login
+      const loginEmail = document.getElementById('loginEmail');
+      const loginPassword = document.getElementById('loginPassword');
+      if (loginEmail) loginEmail.value = '';
+      if (loginPassword) loginPassword.value = '';
+      
+      // Limpar lista visual - buscar diretamente do DOM
+      const listaEl = document.getElementById('lista');
+      const vazioEl = document.getElementById('vazio');
+      const contadorEl = document.getElementById('contador');
+      
+      if (listaEl) listaEl.innerHTML = '';
+      if (vazioEl) vazioEl.style.display = 'block';
+      if (contadorEl) contadorEl.textContent = '0';
+      
+      // Mostrar mensagem
+      const statusDiv = document.getElementById('loginStatus');
+      if (statusDiv) {
+        statusDiv.textContent = 'Você saiu do sistema. Faça login novamente.';
+        statusDiv.className = 'login-status info';
+        statusDiv.style.display = 'block';
+      }
+    }
+
+    let sistemaInicializado = false; // Previne múltiplas inicializações
+    
+    let authState = {
+      checking: false,
+      authenticated: false,
+      token: null
+    };
+    
+    function verificarAutenticacao() {
+      if (authState.checking) {
+        return; // Evitar múltiplas verificações simultâneas
+      }
+      
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        authState = { checking: false, authenticated: false, token: null };
+        mostrarTelaLogin();
+        sistemaInicializado = true;
+        return false;
+      }
+      
+      // Se já verificamos este token e está autenticado
+      if (authState.token === token && authState.authenticated && sistemaInicializado) {
+        mostrarTelaApp();
+        return true;
+      }
+      
+      // Nova verificação necessária
+      authState.checking = true;
+      
+      // Fazer apenas uma verificação
+      fetch('/api/lists', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(response => {
+        authState.checking = false;
+        sistemaInicializado = true;
+        
+        if (response.status === 200) {
+          authState = { checking: false, authenticated: true, token };
+          mostrarTelaApp();
+          carregarItensDoBackend();
+        } else {
+          localStorage.removeItem('authToken');
+          authState = { checking: false, authenticated: false, token: null };
+          mostrarTelaLogin();
+        }
+      })
+      .catch(error => {
+        authState.checking = false;
+        sistemaInicializado = true;
+        mostrarTelaLogin();
+      });
+      
+      return true;
+    }
+    
+    function mostrarTelaLogin() {
+      if (loginScreen && mainApp) {
+        loginScreen.style.display = 'flex';
+        mainApp.style.display = 'none';
+      }
+    }
+    
+    function mostrarTelaApp() {
+      if (loginScreen && mainApp) {
+        loginScreen.style.display = 'none';
+        mainApp.style.display = 'block';
+      }
+    }
+
+    let carregandoDados = false; // Flag para evitar múltiplas requisições
+    
+    // Função para carregar itens do backend
+    async function carregarItensDoBackend() {
+      if (carregandoDados || !authState.authenticated) {
+        return;
+      }
+      
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          return;
+        }
+
+        carregandoDados = true;
+
+        const response = await fetch('/api/lists', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Processar items com todos os campos
+          if (Array.isArray(data)) {
+            items = data.map(item => ({
+              id: item.id,
+              texto: item.texto || item.text || '',
+              imagem: item.image_path || item.image || item.imagem,
+              pinned: Boolean(item.pinned),
+              description: item.description || '',
+              priority: item.priority || 'medium',
+              timestamp: item.created_at || Date.now()
+            }));
+          } else if (data.items && Array.isArray(data.items)) {
+            items = data.items.map(item => ({
+              id: item.id,
+              texto: item.texto || item.text || '',
+              imagem: item.image_path || item.image || item.imagem,
+              pinned: Boolean(item.pinned),
+              description: item.description || '',
+              priority: item.priority || 'medium',
+              timestamp: item.created_at || Date.now()
+            }));
+          } else if (data.lists && Array.isArray(data.lists)) {
+            items = data.lists.map(item => ({
+              id: item.id,
+              texto: item.texto || item.text || '',
+              imagem: item.image_path || item.image || item.imagem,
+              pinned: Boolean(item.pinned),
+              description: item.description || '',
+              priority: item.priority || 'medium',
+              timestamp: item.created_at || Date.now()
+            }));
+          }
+          
+          renderizarLista();
+          atualizarEstatisticas();
+        } else if (response.status === 401) {
+          // Token inválido, fazer logout completo
+          logout();
+        }
+      } catch (error) {
+      } finally {
+        carregandoDados = false;
+      }
+    }
+
+    // Aplicar tema imediatamente (antes do DOM carregar)
+    function aplicarTema() {
+      const savedTheme = localStorage.getItem('theme');
+      
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+        document.body.classList.add('dark-theme');
+        document.body.style.background = 'linear-gradient(180deg, #041027 0%, #082036 100%)';
+      } else {
+        document.body.style.background = 'linear-gradient(180deg, #eef3ff 0%, #f4f7fb 100%)';
+      }
+    }
+
+    // Aplicar tema IMEDIATAMENTE
+    aplicarTema();
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', () => {
+      
+      // Configurar elementos de login
+      const loginForm = document.getElementById('loginForm');
+      const loginScreen = document.getElementById('loginScreen');
+      const mainApp = document.getElementById('mainApp');
+      
+      // Event listener do login
+      if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const email = document.getElementById('loginEmail').value;
+          const senha = document.getElementById('loginPassword').value;
+          
+          const loginBtn = document.getElementById('loginBtn');
+          loginBtn.disabled = true;
+          loginBtn.textContent = 'Entrando...';
+          
+          await fazerLogin(email, senha);
+          
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Entrar';
+        });
+      }
+
+      // Event listener do login demo
+      const loginDemoBtn = document.getElementById('loginDemoBtn');
+      if (loginDemoBtn) {
+        loginDemoBtn.addEventListener('click', async () => {
+          const DEMO_EMAIL = 'demo@exemplo.com';
+          const DEMO_PASS = 'demo123';
+          loginDemoBtn.disabled = true;
+          loginDemoBtn.textContent = 'Verificando conta demo...';
+          loginDemoBtn.style.backgroundColor = '#ffc107';
+          let sucesso = false;
+          try {
+            // Tenta login direto
+            let ok = await fazerLogin(DEMO_EMAIL, DEMO_PASS);
+            if (!ok) {
+              loginDemoBtn.textContent = 'Criando conta demo...';
+              // Tenta registrar
+              const regResp = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'demo', email: DEMO_EMAIL, password: DEMO_PASS })
+              });
+              let regData = {};
+              try { regData = await regResp.json(); } catch {}
+              if (!regResp.ok && !(regData.error || '').includes('Usuario ja existe')) {
+                throw new Error(regData.error || 'Falha ao registrar conta demo');
+              }
+              loginDemoBtn.textContent = 'Logando conta demo...';
+              ok = await fazerLogin(DEMO_EMAIL, DEMO_PASS);
+            }
+            sucesso = ok;
+            if (sucesso) {
+              showLoginStatus('Login demo realizado com sucesso!', 'success');
+            } else {
+              throw new Error('Falha ao autenticar conta demo');
+            }
+          } catch (err) {
+            showLoginStatus('Erro no login demo: ' + err.message, 'error');
+          } finally {
+            loginDemoBtn.disabled = false;
+            loginDemoBtn.textContent = '🚀 Login Demo (Rápido)';
+            loginDemoBtn.style.backgroundColor = sucesso ? '#198754' : '#dc3545';
+          }
+        });
+      }
+
+      // Event listener para criar conta
+      const registerBtn = document.getElementById('registerBtn');
+      if (registerBtn) {
+        registerBtn.addEventListener('click', async () => {
+          const email = document.getElementById('loginEmail').value.trim();
+          const senha = document.getElementById('loginPassword').value.trim();
+          
+          // Validação de entrada
+          if (!email) {
+            showLoginStatus('Por favor, digite um email válido', 'error');
+            document.getElementById('loginEmail').focus();
+            return;
+          }
+          
+          if (!senha || senha.length < 4) {
+            showLoginStatus('A senha deve ter pelo menos 4 caracteres', 'error');
+            document.getElementById('loginPassword').focus();
+            return;
+          }
+          
+          registerBtn.disabled = true;
+          registerBtn.textContent = 'Criando...';
+          registerBtn.style.backgroundColor = '#ffc107';
+          
+          try {
+            const response = await fetch('/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: email.split('@')[0],
+                email: email,
+                password: senha
+              })
+            });
+            
+            let data = {};
+            try { data = await response.json(); } catch {}
+            if (response.ok) {
+              showLoginStatus('Conta criada com sucesso! Fazendo login...', 'success');
+              registerBtn.textContent = 'Logando...';
+              registerBtn.style.backgroundColor = '#007bff';
+              const loginOk = await fazerLogin(email, senha);
+              if (!loginOk) showLoginStatus('Conta criada, mas login falhou', 'error');
+            } else {
+              showLoginStatus(data.error || 'Erro ao criar conta', 'error');
+            }
+          } catch (error) {
+            showLoginStatus('Erro de conexão ao criar conta', 'error');
+          } finally {
+            setTimeout(() => {
+              registerBtn.disabled = false;
+              registerBtn.textContent = 'Criar Nova Conta';
+              registerBtn.style.backgroundColor = '#6c757d';
+            }, 2000);
+          }
+        });
+      }
+      
+      // Garantir que o tema está aplicado e atualizar botão
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        if (themeBtn) themeBtn.textContent = '☀️';
+      }
+
+      // Inicializar elementos DOM
+      itemInput = document.getElementById('itemInput');
+      imgInput = document.getElementById('imgInput');
+      addBtn = document.getElementById('addBtn');
+      lista = document.getElementById('lista');
+      vazio = document.getElementById('vazio');
+      contador = document.getElementById('contador');
+      limparBtn = document.getElementById('limparBtn');
+      themeBtn = document.getElementById('themeBtn');
+
+      // Adicionar eventos
+      if (addBtn) addBtn.addEventListener('click', adicionarItem);
+      if (limparBtn) limparBtn.addEventListener('click', limparTudo);
+      if (themeBtn) {
+        themeBtn.addEventListener('click', toggleTheme);
+        // Atualizar texto do botão baseado no tema atual
+        const isDark = document.body.classList.contains('dark-theme');
+        themeBtn.textContent = isDark ? '☀️' : '🌓';
+      }
+      
+      if (itemInput) {
+        itemInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') adicionarItem();
+        });
+      }
+
+      // Event listeners para botões do header
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (confirm('Deseja realmente sair do sistema?')) {
+            logout();
+          }
+        });
+      }
+      
+      const dashboardBtn = document.getElementById('dashboardBtn');
+      if (dashboardBtn) {
+        dashboardBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const statsSection = document.getElementById('statsSection');
+          const listaSection = document.querySelector('.lista');
+          
+          if (statsSection && listaSection) {
+            const isVisible = statsSection.style.display !== 'none';
+            statsSection.style.display = isVisible ? 'none' : 'block';
+            listaSection.style.display = isVisible ? 'block' : 'none';
+            dashboardBtn.textContent = isVisible ? '📊 Dashboard' : '📋 Projetos';
+            
+            if (!isVisible) {
+              atualizarEstatisticas();
+            }
+          }
+        });
+      }
+      
+      // Event listeners do modal de imagem
+      const mediaClose = document.getElementById('mediaClose');
+      const mediaBackdrop = document.querySelector('.media-backdrop');
+      const mediaModal = document.getElementById('media-modal');
+      
+      if (mediaClose) {
+        mediaClose.addEventListener('click', fecharModal);
+      }
+      if (mediaBackdrop) {
+        mediaBackdrop.addEventListener('click', fecharModal);
+      }
+      if (mediaModal) {
+        mediaModal.addEventListener('click', function(e) {
+          if (e.target === mediaModal) {
+            fecharModal();
+          }
+        });
+      }
+
+      // Verificar autenticação APENAS uma vez na inicialização
+      if (!sistemaInicializado) {
+        verificarAutenticacao();
+      }
+
+      carregarProjetosDoBackend();
+    });
+    
+    // Carregar projetos do backend
+    async function carregarProjetosDoBackend() {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          renderizarLista();
+          return;
+        }
+        
+        const response = await fetch('/api/lists', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.items && Array.isArray(data.items)) {
+            items = data.items.map(item => ({
+              id: item.id,
+              texto: item.texto,
+              imagem: item.image_path || null,
+              description: item.description,
+              priority: item.priority,
+              timestamp: item.created_at ? new Date(item.created_at).getTime() : Date.now()
+            }));
+            
+            // Atualizar nextId
+            if (items.length > 0) {
+              nextId = Math.max(...items.map(i => i.id)) + 1;
+            }
+            
+            renderizarLista();
+            atualizarEstatisticas();
+          }
+        }
+      } catch (error) {
+        renderizarLista();
+      }
+    }
+
+    // Funções de Estatísticas
+    function toggleStats() {
+      const statsSection = document.getElementById('statsSection');
+      const statsBtn = document.getElementById('statsBtn');
+      
+      if (statsSection && statsSection.style.display === 'none') {
+        statsSection.style.display = 'block';
+        if (statsBtn) statsBtn.textContent = '📈';
+        atualizarEstatisticas();
+      } else if (statsSection) {
+        statsSection.style.display = 'none';
+        if (statsBtn) statsBtn.textContent = '📊';
+      }
+    }
+    
+    function atualizarEstatisticas() {
+      const total = items.length;
+      const hoje = new Date();
+      const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      
+      const projetosMes = items.filter(item => {
+        const dataItem = new Date(item.created_at || item.timestamp || Date.now());
+        return dataItem >= inicioMes;
+      }).length;
+      
+      const mediaCaracteres = total > 0 
+        ? Math.round(items.reduce((acc, item) => acc + (item.texto?.length || 0), 0) / total)
+        : 0;
+      
+      // Porcentagem de projetos com imagem (completos)
+      const comImagem = items.filter(item => item.imagem || item.image_path).length;
+      const produtividade = total > 0 ? Math.round((comImagem / total) * 100) : 0;
+      
+      // Atualizar elementos se existirem
+      const totalEl = document.getElementById('totalProjetos');
+      const mesEl = document.getElementById('projetosMes');
+      const mediaEl = document.getElementById('mediaCaracteres');
+      const prodEl = document.getElementById('produtividade');
+      
+      if (totalEl) totalEl.textContent = total;
+      if (mesEl) mesEl.textContent = projetosMes;
+      if (mediaEl) mediaEl.textContent = mediaCaracteres;
+      if (prodEl) prodEl.textContent = produtividade + '%';
+
+      // Atualizar gráfico mensal
+      const ctx = document.getElementById('projectsPerMonthChart');
+      if (ctx) {
+        // Agrupar por mês (últimos 6 meses)
+        const now = new Date();
+        const months = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          months.push({ key: d.toISOString().slice(0,7), label: d.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + d.getFullYear().toString().slice(-2) });
+        }
+        const counts = months.map(m => items.filter(it => {
+          const t = new Date(it.created_at || it.timestamp || Date.now());
+          return t.toISOString().slice(0,7) === m.key;
+        }).length);
+
+        if (!window._projectsChart) {
+          window._projectsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: months.map(m => m.label),
+              datasets: [{
+                label: 'Projetos',
+                data: counts,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: { y: { beginAtZero: true, ticks: { precision:0 } } }
+            }
+          });
+        } else {
+          window._projectsChart.data.labels = months.map(m => m.label);
+          window._projectsChart.data.datasets[0].data = counts;
+          window._projectsChart.update();
+        }
+      }
+    }
+
+    // ==================== FUNCIONALIDADES EXTRAS ====================
+    
+    // Adicionar botão de extras ao carregar a página
+    function adicionarBotaoExtras() {
+      const topoAcoes = document.querySelector('.topo-acoes');
+      if (!topoAcoes) return;
+
+      // Verificar se botão já existe
+      if (document.getElementById('extrasBtn')) return;
+
+      const extrasBtn = document.createElement('button');
+      extrasBtn.id = 'extrasBtn';
+      extrasBtn.textContent = '⚡';
+      extrasBtn.className = 'btn secondary';
+      extrasBtn.title = 'Funcionalidades extras';
+      extrasBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        mostrarFuncionalidadesExtras();
+      });
+
+      const dashboardBtn = document.getElementById('dashboardBtn');
+      if (dashboardBtn) {
+        topoAcoes.insertBefore(extrasBtn, dashboardBtn);
+      } else {
+        topoAcoes.appendChild(extrasBtn);
+      }
+    }
+
+    function mostrarFuncionalidadesExtras() {
+      const modal = criarModalExtras();
+      document.body.appendChild(modal);
+    }
+
+    function criarModalExtras() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-extras-wrapper';
+      modal.innerHTML = `
+        <div class="modal-extras-content">
+          <div class="modal-header">
+            <h3>⚡ Funcionalidades Extras</h3>
+            <button class="modal-close">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="extra-function">
+              <h4>🏠 Consultar CEP</h4>
+              <div class="input-grupo">
+                <input type="text" id="cepInput" placeholder="Digite um CEP (ex: 01310-100)" maxlength="9">
+                <button class="btn principal btn-consultar-cep">Buscar</button>
+              </div>
+              <div id="cepResult" class="result-area"></div>
+            </div>
+            
+            <div class="extra-function">
+              <h4>💭 Citações Motivacionais</h4>
+              <button class="btn principal btn-carregar-citacoes">Carregar Citação</button>
+              <div id="quotesResult" class="result-area"></div>
+            </div>
+            
+            <div class="extra-function">
+              <h4>📊 Minhas Estatísticas</h4>
+              <button class="btn principal btn-carregar-stats">Ver Estatísticas</button>
+              <div id="statsResult" class="result-area"></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Event listeners
+      const closeBtn = modal.querySelector('.modal-close');
+      closeBtn.addEventListener('click', () => modal.remove());
+      
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.remove();
+      });
+      
+      const handleEscape = function(e) {
+        if (e.key === 'Escape') {
+          modal.remove();
+          document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+      
+      // Botões de funcionalidades
+      modal.querySelector('.btn-consultar-cep').addEventListener('click', consultarCEP);
+      modal.querySelector('.btn-carregar-citacoes').addEventListener('click', carregarCitacoes);
+      modal.querySelector('.btn-carregar-stats').addEventListener('click', carregarEstatisticas);
+
+      // Estilos
+      const style = document.createElement('style');
+      style.textContent = `
+        .modal-extras-wrapper {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          padding: 20px;
+          background: rgba(0, 0, 0, 0.5);
+        }
+        .modal-extras-content {
+          background: white;
+          color: #333;
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 600px;
+          width: 100%;
+          max-height: 80vh;
+          overflow-y: auto;
+          position: relative;
+        }
+        body.dark-theme .modal-extras-content {
+          background: #2d3748;
+          color: #e2e8f0;
+        }
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+        .modal-header h3 {
+          margin: 0;
+          font-size: 20px;
+        }
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 24px;
+          cursor: pointer;
+          padding: 4px 8px;
+          color: inherit;
+        }
+        .modal-close:hover {
+          opacity: 0.7;
+        }
+        .extra-function {
+          margin-bottom: 24px;
+          padding-bottom: 20px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        body.dark-theme .extra-function {
+          border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+        .extra-function:last-child {
+          border-bottom: none;
+        }
+        .extra-function h4 {
+          margin: 0 0 12px 0;
+          font-size: 16px;
+        }
+        .input-grupo {
+          display: flex;
+          gap: 8px;
+        }
+        .input-grupo input {
+          flex: 1;
+          padding: 8px 12px;
+          border: 1px solid rgba(0, 0, 0, 0.2);
+          border-radius: 6px;
+          font-size: 14px;
+        }
+        body.dark-theme .input-grupo input {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+          color: inherit;
+        }
+        .result-area {
+          margin-top: 12px;
+          padding: 12px;
+          background: rgba(0, 0, 0, 0.02);
+          border-radius: 8px;
+          font-size: 14px;
+          display: none;
+        }
+        body.dark-theme .result-area {
+          background: rgba(255, 255, 255, 0.05);
+        }
+        .result-area.show {
+          display: block;
+        }
+      `;
+      modal.appendChild(style);
+
+      return modal;
+    }
+
+    async function consultarCEP() {
+      const cepInput = document.getElementById('cepInput');
+      const resultDiv = document.getElementById('cepResult');
+      
+      if (!cepInput || !resultDiv) return;
+      
+      const cep = cepInput.value.replace(/\D/g, '');
+
+      if (cep.length !== 8) {
+        resultDiv.innerHTML = '❌ CEP deve ter 8 dígitos';
+        resultDiv.className = 'result-area show';
+        return;
+      }
+
+      try {
+        resultDiv.innerHTML = '⏳ Consultando...';
+        resultDiv.className = 'result-area show';
+        
+        const response = await fetch(`/api/cep/${cep}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.data) {
+          throw new Error(data.error || 'Falha na consulta');
+        }
+        
+        const endereco = data.data;
+        resultDiv.innerHTML = `
+          <strong>📍 ${endereco.logradouro || 'N/A'}</strong><br>
+          ${endereco.bairro || 'N/A'}, ${endereco.localidade || 'N/A'} - ${endereco.uf || 'N/A'}<br>
+          CEP: ${endereco.cep || cep}
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `❌ Erro: ${error.message}`;
+      }
+    }
+
+    async function carregarCitacoes() {
+      const resultDiv = document.getElementById('quotesResult');
+      if (!resultDiv) return;
+      
+      try {
+        resultDiv.innerHTML = '⏳ Carregando...';
+        resultDiv.className = 'result-area show';
+        
+        const response = await fetch('/api/quotes', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.quote) {
+          throw new Error(data.error || 'Falha ao carregar');
+        }
+        
+        resultDiv.innerHTML = `
+          <div style="padding: 16px; background: linear-gradient(135deg, rgba(37,117,252,0.1), rgba(123,97,255,0.1)); border-radius: 8px; border-left: 4px solid #2575fc;">
+            <div style="font-size: 18px; line-height: 1.6; font-style: italic;">
+              "💬 ${data.quote}"
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `❌ Erro: ${error.message}`;
+      }
+    }
+
+    async function carregarEstatisticas() {
+      const resultDiv = document.getElementById('statsResult');
+      if (!resultDiv) return;
+      
+      try {
+        resultDiv.innerHTML = '⏳ Carregando...';
+        resultDiv.className = 'result-area show';
+        
+        const response = await fetch('/api/lists', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error('Falha ao carregar');
+        }
+        
+        const projects = Array.isArray(data) ? data : (data.items || data.lists || []);
+        const total = projects.length;
+        
+        if (total === 0) {
+          resultDiv.innerHTML = `
+            <div style="padding: 20px; text-align: center;">
+              <div style="font-size: 40px; margin-bottom: 12px;">📋</div>
+              <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">Nenhum projeto cadastrado</div>
+              <div style="font-size: 14px; opacity: 0.8;">Adicione projetos para ver as estatísticas!</div>
+            </div>
+          `;
+          return;
+        }
+        
+        const comImagem = projects.filter(p => p.image_path || p.imagem).length;
+        const mediaTexto = Math.round(projects.reduce((acc, p) => acc + (p.texto?.length || 0), 0) / total);
+        const fixados = projects.filter(p => p.pinned).length;
+        const percentualImagens = Math.round((comImagem / total) * 100);
+        
+        resultDiv.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div><strong>📋 Total de projetos:</strong> ${total}</div>
+            <div><strong>📌 Projetos fixados:</strong> ${fixados}</div>
+            <div><strong>🖼️ Com imagens:</strong> ${comImagem} (${percentualImagens}%)</div>
+            <div><strong>📝 Média de caracteres:</strong> ${mediaTexto}</div>
+          </div>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `❌ Erro: ${error.message}`;
+      }
+    }
+
+    // Adicionar botão extras quando a página carregar
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(adicionarBotaoExtras, 500);
+    });
+
+  </script>
+</body>
+</html>
