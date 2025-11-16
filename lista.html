@@ -821,13 +821,18 @@
       li.appendChild(salvarBtn);
       li.appendChild(cancelarBtn);
 
-      // Função salvar
+            // Função salvar
       const salvar = async () => {
         const novoTexto = input.value.trim();
         if (novoTexto.length < 5) {
           showToast('Texto deve ter pelo menos 5 caracteres', 'error');
           return;
         }
+
+        // Desabilitar botões durante salvamento
+        salvarBtn.disabled = true;
+        cancelarBtn.disabled = true;
+        input.disabled = true;
 
         try {
           const token = localStorage.getItem('authToken');
@@ -841,7 +846,7 @@
               texto: novoTexto,
               description: item.description || '',
               priority: item.priority || 'medium',
-              image_path: item.imagem || item.image_path,
+              image_path: item.imagem || item.image_path || '',
               pinned: item.pinned || false
             })
           });
@@ -849,16 +854,23 @@
           if (response.ok) {
             item.texto = novoTexto;
             const itemIndex = items.findIndex(i => i.id === item.id);
-            if (itemIndex !== -1) items[itemIndex] = item;
+            if (itemIndex !== -1) items[itemIndex].texto = novoTexto;
             renderizarLista();
             showToast('Item editado!', 'success');
           } else {
-            showToast('Erro ao editar item!', 'error');
+            const error = await response.json();
+            showToast('Erro: ' + (error.error || 'Não foi possível editar'), 'error');
             restaurar();
+            salvarBtn.disabled = false;
+            cancelarBtn.disabled = false;
+            input.disabled = false;
           }
         } catch (error) {
           showToast('Erro ao editar item!', 'error');
           restaurar();
+          salvarBtn.disabled = false;
+          cancelarBtn.disabled = false;
+          input.disabled = false;
         }
       };
 
@@ -2005,4 +2017,5 @@
 
   </script>
 </body>
+
 </html>
