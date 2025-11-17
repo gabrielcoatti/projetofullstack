@@ -179,7 +179,7 @@ GET /api/quotes        - Obter citação motivacional aleatória
 - Verifique o terminal do servidor para logs de debug
 
 **Problema**: Imagens não carregam
-- Formatos suportados: PNG, JPG, JPEG, GIF, WebP
+- Formatos suportados: PNG
 - Tamanho máximo: 2MB (para melhor performance)
 - Imagens são salvas como base64 no banco de dados
 - Limpe o cache do navegador se necessário
